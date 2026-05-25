@@ -19,6 +19,7 @@ Download and place in `data/` folder:
 - - https://cecas.clemson.edu/~ahoover/stare/probing/labels-vk.tar
 
 Expected structure:
+```text
 data/
 ├── DRIVE/
 │   └── training/
@@ -26,9 +27,10 @@ data/
 │       ├── 1st_manual/
 │       └── mask/
 └── STARE/
-├── stare-images/
-├── labels-ah/
-└── labels-vk/
+    ├── stare-images/
+    ├── labels-ah/
+    └── labels-vk/
+```
 
 ## Running
 
