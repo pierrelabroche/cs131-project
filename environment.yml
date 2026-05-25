@@ -4,6 +4,7 @@ channels:
 dependencies:
   - bzip2=1.0.8
   - ca-certificates=2026.5.20
+  - imagecodecs=2026.3.3
   - libexpat=2.8.1
   - libffi=3.5.2
   - liblzma=5.8.3
@@ -12,6 +13,7 @@ dependencies:
   - ncurses=6.6
   - openssl=3.6.2
   - packaging=26.2
+  - pandas=2.3.3
   - pip=26.1.1
   - python=3.11.15
   - readline=8.3
