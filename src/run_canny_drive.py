@@ -7,6 +7,9 @@ from skimage import io
 
 from canny import canny
 from evaluate import compute_metrics
+from preprocessing import preprocess
+from skimage.morphology import closing, disk
+from scipy.ndimage import binary_fill_holes
 
 IMAGE_DIR = "data/DRIVE/training/images"
 TRUTH_DIR = "data/DRIVE/training/1st_manual"
@@ -26,15 +29,6 @@ def load_binary(path):
         img = img[:, :, 0]
 
     return (img > 0).astype(np.uint8)
-
-
-def get_green_channel(img):
-    """
-    Extract green channel from a RGB image as blood vessels have higher contrast in green channel.
-    """
-    if img.ndim == 3:
-        return img[:, :, 1]
-    return img
 
 
 def find_matching_file(folder, image_id):
@@ -68,16 +62,17 @@ def main():
         mask_path = find_matching_file(MASK_DIR, image_id)
         img = io.imread(image_path)
 
-        # Extract green channel
-        green = get_green_channel(img)
+        _, green = preprocess(img)
 
         # Binary ground truth and mask
         gt = load_binary(groundtruth_path)
         fov_mask = load_binary(mask_path)
-        
+
         # Run canny edge detector
-        pred = canny(green, sigma=1.0, low=0.05, high=0.15)
-        pred = (pred > 0).astype(np.uint8)
+        edges = canny(green, sigma=1.0, low=0.05, high=0.15)
+
+        closed = closing(edges, disk(2))
+        pred = binary_fill_holes(closed).astype(np.uint8)
 
         # Compute metrics
         metrics = compute_metrics(pred, gt, fov_mask)
