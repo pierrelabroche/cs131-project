@@ -1,3 +1,5 @@
+import numpy as np
+
 def compute_metrics(pred_binary, gt_binary, fov_mask):
     # Restrict to FOV pixels only
     pred = pred_binary[fov_mask > 0].flatten()
