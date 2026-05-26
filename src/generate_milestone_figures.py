@@ -9,6 +9,8 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from canny import canny
+from gabor import gabor_segment
+from color_threshold import color_threshold_segment
 from preprocessing import preprocess
 
 IMAGE_PATH = "data/DRIVE/training/images/21_training.tif"
@@ -16,64 +18,111 @@ GT_PATH    = "data/DRIVE/training/1st_manual/21_manual1.gif"
 MASK_PATH  = "data/DRIVE/training/mask/21_training_mask.gif"
 OUT_DIR    = "results/figures"
 
+
 def load():
     image = np.array(Image.open(IMAGE_PATH))
-    if image.shape[2] == 4:
+    if image.ndim == 3 and image.shape[2] == 4:
         image = image[:, :, :3]
     gt   = np.array(Image.open(GT_PATH))
     mask = np.array(Image.open(MASK_PATH))
     return image, (gt > 0).astype(np.uint8), (mask > 0).astype(np.uint8)
 
+
 def run_canny(image):
-    _, green = preprocess(image)
-    edges  = canny(green, sigma=1.0, low=0.05, high=0.15)
+    _, enhanced = preprocess(image)
+    edges  = canny(enhanced, sigma=1.0, low=0.05, high=0.15)
     closed = closing(edges, disk(2))
     pred   = binary_fill_holes(closed).astype(np.uint8)
     return edges, pred
 
+
+def run_gabor(image):
+    _, enhanced = preprocess(image)
+    pred, _ = gabor_segment(enhanced)
+    return pred
+
+
+def run_color(image):
+    pred, _ = color_threshold_segment(image)
+    return pred
+
+
+def error_map(pred, gt, fov_mask):
+    """
+    Build RGB error map: TP=green, FN=red, FP=blue, TN=dark gray.
+    """
+    vis = np.zeros((*gt.shape, 3), dtype=np.uint8)
+    inside = fov_mask == 1
+    vis[inside & (pred == 1) & (gt == 1)] = [0,   200, 0  ]
+    vis[inside & (pred == 0) & (gt == 1)] = [220, 0,   0  ]
+    vis[inside & (pred == 1) & (gt == 0)] = [0,   0,   220]
+    vis[inside & (pred == 0) & (gt == 0)] = [30,  30,  30 ]
+    return vis
+
+
 def figure2(image, edges):
+    """
+    Figure 2: Original | Canny edges | Yellow overlay.
+    """
     overlay = image.copy()
-    overlay[edges == 1] = [255, 255, 0]  # yellow edges on original
+    overlay[edges == 1] = [255, 255, 0]
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    axes[0].imshow(image)
-    axes[0].set_title("Original")
-    axes[1].imshow(edges, cmap="gray")
-    axes[1].set_title("Canny Edges")
-    axes[2].imshow(overlay)
-    axes[2].set_title("Overlay")
-    for ax in axes:
-        ax.axis("off")
+    axes[0].imshow(image);        axes[0].set_title("Original")
+    axes[1].imshow(edges, cmap="gray"); axes[1].set_title("Canny Edges")
+    axes[2].imshow(overlay);      axes[2].set_title("Overlay")
+    for ax in axes: ax.axis("off")
     fig.tight_layout()
     fig.savefig(f"{OUT_DIR}/figure2_canny.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
     print("Saved figure2_canny.png")
 
-def figure3(image, pred, gt, fov_mask):
-    vis = np.zeros((*gt.shape, 3), dtype=np.uint8)
-    inside = fov_mask == 1
 
-    vis[inside & (pred == 1) & (gt == 1)] = [0,   200, 0  ]  # TP green
-    vis[inside & (pred == 0) & (gt == 1)] = [220, 0,   0  ]  # FN red
-    vis[inside & (pred == 1) & (gt == 0)] = [0,   0,   220]  # FP blue
-    vis[inside & (pred == 0) & (gt == 0)] = [30,  30,  30 ]  # TN dark gray
+def figure3(image, pred, gt, fov_mask):
+    """
+    Figure 3: Original | Ground truth | TP/FN/FP error map (Canny).
+    """
+    vis = error_map(pred, gt, fov_mask)
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    axes[0].imshow(image)
-    axes[0].set_title("Original")
-    axes[1].imshow(gt, cmap="gray")
-    axes[1].set_title("Ground Truth")
-    axes[2].imshow(vis)
-    axes[2].set_title("Prediction  (green=TP  red=FN  blue=FP)")
-    for ax in axes:
-        ax.axis("off")
+    axes[0].imshow(image);           axes[0].set_title("Original")
+    axes[1].imshow(gt, cmap="gray"); axes[1].set_title("Ground Truth")
+    axes[2].imshow(vis);             axes[2].set_title("Prediction  (green=TP  red=FN  blue=FP)")
+    for ax in axes: ax.axis("off")
     fig.tight_layout()
     fig.savefig(f"{OUT_DIR}/figure3_mask_vs_gt.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
     print("Saved figure3_mask_vs_gt.png")
 
+
+def figure4(image, pred_canny, pred_gabor, pred_color, gt, fov_mask):
+    """
+    Figure 4: Side-by-side error maps for all three methods on the same image.
+    """
+    maps = [
+        (pred_canny, "Canny"),
+        (pred_gabor, "Gabor"),
+        (pred_color, "Color Threshold"),
+    ]
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    for ax, (pred, title) in zip(axes, maps):
+        ax.imshow(error_map(pred, gt, fov_mask))
+        ax.set_title(f"{title}\n(green=TP  red=FN  blue=FP)")
+        ax.axis("off")
+    fig.tight_layout()
+    fig.savefig(f"{OUT_DIR}/figure4_method_comparison.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("Saved figure4_method_comparison.png")
+
+
 if __name__ == "__main__":
     image, gt, fov_mask = load()
-    edges, pred = run_canny(image)
+
+    edges, pred_canny = run_canny(image)
+    pred_gabor        = run_gabor(image)
+    pred_color        = run_color(image)
+
     figure2(image, edges)
-    figure3(image, pred, gt, fov_mask)
+    figure3(image, pred_canny, gt, fov_mask)
+    figure4(image, pred_canny, pred_gabor, pred_color, gt, fov_mask)
