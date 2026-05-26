@@ -9,6 +9,7 @@ from skimage.morphology import closing, disk
 from scipy.ndimage import binary_fill_holes
 
 from canny import canny
+from color_threshold import color_threshold_segment
 from gabor import gabor_segment
 from evaluate import compute_metrics
 from preprocessing import preprocess
@@ -44,7 +45,7 @@ def find_matching_file(folder, image_id):
     return matches[0]
 
 
-def run_canny(enhanced):
+def run_canny(img, enhanced):
     """
     Run Canny edge detection and convert edges to filled vessel regions
     via morphological closing and hole filling.
@@ -54,17 +55,28 @@ def run_canny(enhanced):
     return binary_fill_holes(closed).astype(np.uint8)
 
 
-def run_gabor(enhanced):
+def run_color_threshold(img, enhanced):
+    """
+    Run color thresholding segmentation (inverted L channel + Otsu).
+    Operates on the original RGB image, not the preprocessed green channel.
+    """
+    binary, _ = color_threshold_segment(img)
+    return binary
+
+
+def run_gabor(img, enhanced):
     """
     Run Gabor filter bank segmentation (Soares et al. 2006, simplified).
     Returns the binary vessel mask; discards the raw response map.
     """
     binary, _ = gabor_segment(enhanced)
     return binary
+    
 
 
 METHODS = {
     "canny": run_canny,
+    "color_threshold": run_color_threshold,
     "gabor": run_gabor,
 }
 
@@ -94,7 +106,7 @@ def main():
         gt              = load_binary(gt_path)
         fov_mask        = load_binary(mask_path)
 
-        pred = method_fn(enhanced)
+        pred = method_fn(img, enhanced)
 
         metrics          = compute_metrics(pred, gt, fov_mask)
         metrics["image"] = filename

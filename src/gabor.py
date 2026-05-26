@@ -36,6 +36,7 @@ def gabor_segment(image_enhanced, threshold=0.1):
           x_prime = x_coords * np.cos(theta_rad) + y_coords * np.sin(theta_rad)
           y_prime = -x_coords * np.sin(theta_rad) + y_coords * np.cos(theta_rad)
 
+          # psi=0 — (symmetric response, matches vessel ridge profile)
           gabor_kernel = np.exp(-(x_prime**2 + (gamma**2) * y_prime**2) / (2 * sigma**2)) * np.cos(2 * np.pi * x_prime / lam)
           response = np.abs(cv2.filter2D(img, -1, gabor_kernel))  # Use absolute value of response
 
