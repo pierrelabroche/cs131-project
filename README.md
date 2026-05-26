@@ -39,9 +39,14 @@ data/
 Run all scripts from the project root:
 
 ```bash
-# Canny — evaluates all 20 DRIVE training images, saves masks + metrics CSV
-python src/run_canny_drive.py
+# Run a segmentation method on all 20 DRIVE training images
+# Choices: canny, gabor, color_threshold
+python src/run_drive.py --method canny
+python src/run_drive.py --method gabor
+python src/run_drive.py --method color_threshold
 
-# Milestone figures (Figures 1–3)
+# Generate milestone figures (preprocessing + per-method error map comparison)
 python src/generate_milestone_figures.py
 ```
+
+Outputs are saved to `outputs/<method>/training/` (masks + metrics CSV) and `results/figures/`.
