@@ -22,6 +22,7 @@ from preprocessing import preprocess
 from canny import canny
 from gabor import gabor_segment
 from color_threshold import color_threshold_segment
+from fusion import average_fusion_segment
 from evaluate import roc_curve, auc
 
 IMAGE_DIR = "data/DRIVE/training/images"
@@ -50,21 +51,19 @@ def find_matching_file(folder, image_id):
 
 
 def get_response_maps(img, enhanced):
-    """Return (response_map, label) for each method."""
-    # Canny: normalized NMS magnitude before hysteresis
+    """Return (response_map, label) for each method including fusion."""
     _, canny_response = canny(enhanced, sigma=1.0, low=0.05, high=0.15, return_response=True)
-
-    # Gabor: normalized filter-bank response
     _, gabor_response = gabor_segment(enhanced)
-
-    # Color threshold: normalized inverted-L channel
     _, L_enhanced = color_threshold_segment(img)
     color_response = L_enhanced.astype(np.float32) / 255.0
 
+    _, fusion_response = average_fusion_segment(img, enhanced)
+
     return [
-        (canny_response, "Canny"),
-        (gabor_response, "Gabor"),
-        (color_response, "Color Threshold"),
+        (canny_response,  "Canny"),
+        (gabor_response,  "Gabor"),
+        (color_response,  "Color Threshold"),
+        (fusion_response, "Fusion (avg)"),
     ]
 
 
@@ -88,7 +87,7 @@ def main():
         return
 
     # Accumulate per-image (tpr, fpr) for each method
-    method_names = ["Canny", "Gabor", "Color Threshold"]
+    method_names = ["Canny", "Gabor", "Color Threshold", "Fusion (avg)"]
     per_image_tprs = {m: [] for m in method_names}
     per_image_fprs = {m: [] for m in method_names}
 
@@ -113,7 +112,7 @@ def main():
 
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    colors = {"Canny": "#e15759", "Gabor": "#4e79a7", "Color Threshold": "#59a14f"}
+    colors = {"Canny": "#e15759", "Gabor": "#4e79a7", "Color Threshold": "#59a14f", "Fusion (avg)": "#f28e2b"}
 
     fig, ax = plt.subplots(figsize=(7, 6))
     ax.plot([0, 1], [0, 1], "k--", linewidth=0.8, label="Random")

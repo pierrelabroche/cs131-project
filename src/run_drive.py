@@ -11,6 +11,7 @@ from scipy.ndimage import binary_fill_holes
 from canny import canny
 from color_threshold import color_threshold_segment
 from gabor import gabor_segment
+from fusion import average_fusion_segment
 from evaluate import compute_metrics
 from preprocessing import preprocess
 
@@ -71,13 +72,19 @@ def run_gabor(img, enhanced):
     """
     binary, _ = gabor_segment(enhanced)
     return binary
-    
+
+
+def run_fusion(img, enhanced):
+    binary, _ = average_fusion_segment(img, enhanced)
+    return binary
+
 
 
 METHODS = {
     "canny": run_canny,
     "color_threshold": run_color_threshold,
     "gabor": run_gabor,
+    "fusion": run_fusion,
 }
 
 
