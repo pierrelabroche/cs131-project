@@ -186,7 +186,7 @@ def hysteresis(edges, low, high):
     return result
 
 
-def canny(image, sigma=1.0, low=0.05, high=0.15):
+def canny(image, sigma=1.0, low=0.05, high=0.15, return_response=False):
     """
     Full Canny edge detector from scratch.
 
@@ -195,9 +195,12 @@ def canny(image, sigma=1.0, low=0.05, high=0.15):
         sigma: Gaussian blur sigma
         low: low threshold ratio or absolute value
         high: high threshold ratio or absolute value
+        return_response: if True, also return the normalized NMS magnitude
+                         (useful as a continuous response map for ROC curves)
 
     Returns:
         edges: binary edge map
+        response_map: normalized NMS magnitude in [0, 1] (only if return_response=True)
     """
     image = image.astype(np.float32)
 
@@ -224,5 +227,10 @@ def canny(image, sigma=1.0, low=0.05, high=0.15):
     mag, direction = gradient(smoothed)
     thin = non_maximum_suppression(mag, direction)
     edges = hysteresis(thin, low, high)
+
+    if return_response:
+        max_val = thin.max()
+        response_map = thin / (max_val + 1e-8)
+        return edges, response_map
 
     return edges
