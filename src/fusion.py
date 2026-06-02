@@ -70,3 +70,28 @@ def min_fusion_segment(img, enhanced, threshold=0.5):
     fused_map = np.min(np.stack(response_maps, axis=0), axis=0)
     binary_mask = (fused_map >= threshold).astype(np.uint8)
     return binary_mask, fused_map
+
+
+# AUC-derived weights from per-image mean AUC on DRIVE training set:
+# Canny=0.5002, Gabor=0.8023, Color=0.7277  (sum=2.0302)
+AUC_WEIGHTS = np.array([0.5002, 0.8023, 0.7277])
+AUC_WEIGHTS = AUC_WEIGHTS / AUC_WEIGHTS.sum()
+
+
+def weighted_fusion_segment(img, enhanced, threshold=0.273):
+    """
+    Fuse Canny, Gabor, and Color Threshold weighted by their per-image mean AUC.
+    Higher-AUC methods contribute more to the fused response map.
+
+    Inputs:
+        img:      (H, W, 3) original RGB image
+        enhanced: (H, W) CLAHE-enhanced green channel
+        threshold: float in [0, 1] applied to the weighted map
+    Outputs:
+        binary_mask: (H, W) uint8
+        fused_map:   (H, W) float in [0, 1]
+    """
+    response_maps = _get_response_maps(img, enhanced)
+    fused_map = sum(w * r for w, r in zip(AUC_WEIGHTS, response_maps))
+    binary_mask = (fused_map >= threshold).astype(np.uint8)
+    return binary_mask, fused_map

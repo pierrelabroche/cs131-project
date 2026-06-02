@@ -22,7 +22,7 @@ from preprocessing import preprocess
 from canny import canny
 from gabor import gabor_segment
 from color_threshold import color_threshold_segment
-from fusion import average_fusion_segment
+from fusion import weighted_fusion_segment
 from evaluate import roc_curve, auc
 
 IMAGE_DIR = "data/DRIVE/training/images"
@@ -57,13 +57,13 @@ def get_response_maps(img, enhanced):
     _, L_enhanced = color_threshold_segment(img)
     color_response = L_enhanced.astype(np.float32) / 255.0
 
-    _, fusion_response = average_fusion_segment(img, enhanced)
+    _, fusion_weighted_response = weighted_fusion_segment(img, enhanced)
 
     return [
-        (canny_response,  "Canny"),
-        (gabor_response,  "Gabor"),
-        (color_response,  "Color Threshold"),
-        (fusion_response, "Fusion (avg)"),
+        (canny_response,            "Canny"),
+        (gabor_response,            "Gabor"),
+        (color_response,            "Color Threshold"),
+        (fusion_weighted_response,  "Fusion (weighted)"),
     ]
 
 
@@ -87,7 +87,7 @@ def main():
         return
 
     # Accumulate per-image (tpr, fpr, auc) for each method
-    method_names = ["Canny", "Gabor", "Color Threshold", "Fusion (avg)"]
+    method_names = ["Canny", "Gabor", "Color Threshold", "Fusion (weighted)"]
     per_image_tprs = {m: [] for m in method_names}
     per_image_fprs = {m: [] for m in method_names}
     per_image_aucs = {m: [] for m in method_names}
@@ -114,7 +114,7 @@ def main():
 
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    colors = {"Canny": "#e15759", "Gabor": "#4e79a7", "Color Threshold": "#59a14f", "Fusion (avg)": "#f28e2b"}
+    colors = {"Canny": "#e15759", "Gabor": "#4e79a7", "Color Threshold": "#59a14f", "Fusion (weighted)": "#b07aa1"}
 
     fig, ax = plt.subplots(figsize=(7, 6))
     ax.plot([0, 1], [0, 1], "k--", linewidth=0.8, label="Random")

@@ -25,7 +25,7 @@ from scipy.ndimage import binary_fill_holes
 sys.path.insert(0, os.path.dirname(__file__))
 
 from preprocessing import preprocess
-from fusion import average_fusion_segment, max_fusion_segment, min_fusion_segment
+from fusion import average_fusion_segment, max_fusion_segment, min_fusion_segment, weighted_fusion_segment
 from evaluate import compute_metrics
 
 IMAGE_DIR = "data/DRIVE/training/images"
@@ -35,9 +35,10 @@ OUT_DIR   = "results/figures"
 N_THRESHOLDS = 100
 
 FUSION_METHODS = {
-    "fusion_avg": average_fusion_segment,
-    "fusion_max": max_fusion_segment,
-    "fusion_min": min_fusion_segment,
+    "fusion_avg":      average_fusion_segment,
+    "fusion_max":      max_fusion_segment,
+    "fusion_min":      min_fusion_segment,
+    "fusion_weighted": weighted_fusion_segment,
 }
 
 
