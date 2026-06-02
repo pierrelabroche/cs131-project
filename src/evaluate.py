@@ -23,7 +23,7 @@ def compute_metrics(pred_binary, gt_binary, fov_mask):
         'TP': TP, 'TN': TN, 'FP': FP, 'FN': FN
     }
 
-def roc_curve(response_map, gt_binary, fov_mask, n_thresholds=100):
+def roc_curve(response_map, gt_binary, fov_mask, n_thresholds=200):
     """
     Sweep thresholds over response_map and return TPR and FPR arrays.
 
@@ -31,7 +31,8 @@ def roc_curve(response_map, gt_binary, fov_mask, n_thresholds=100):
         tpr: sensitivity at each threshold (descending threshold order)
         fpr: 1-specificity at each threshold
     """
-    thresholds = np.linspace(1, 0, n_thresholds)
+    vals = response_map[fov_mask > 0].flatten()
+    thresholds = np.unique(np.percentile(vals, np.linspace(100, 0, n_thresholds)))[::-1]
     tpr_list, fpr_list = [], []
     for t in thresholds:
         pred = (response_map >= t).astype(int)
@@ -44,4 +45,4 @@ def roc_curve(response_map, gt_binary, fov_mask, n_thresholds=100):
 def auc(fpr, tpr):
     """Compute area under the ROC curve using the trapezoidal rule."""
     order = np.argsort(fpr)
-    return np.trapz(tpr[order], fpr[order])
+    return np.trapezoid(tpr[order], fpr[order])

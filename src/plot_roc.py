@@ -86,10 +86,11 @@ def main():
         print(f"No images found in {IMAGE_DIR}. Download DRIVE first.")
         return
 
-    # Accumulate per-image (tpr, fpr) for each method
+    # Accumulate per-image (tpr, fpr, auc) for each method
     method_names = ["Canny", "Gabor", "Color Threshold", "Fusion (avg)"]
     per_image_tprs = {m: [] for m in method_names}
     per_image_fprs = {m: [] for m in method_names}
+    per_image_aucs = {m: [] for m in method_names}
 
     for i, image_path in enumerate(image_paths):
         filename  = os.path.basename(image_path)
@@ -107,6 +108,7 @@ def main():
             tpr, fpr = roc_curve(response_map, gt, fov_mask, n_thresholds=N_THRESHOLDS)
             per_image_tprs[name].append(tpr)
             per_image_fprs[name].append(fpr)
+            per_image_aucs[name].append(auc(fpr, tpr))
 
         print(f"[{i+1:2d}/{len(image_paths)}] {filename}")
 
@@ -119,11 +121,12 @@ def main():
 
     for name in method_names:
         mean_tpr, std_tpr = average_roc(per_image_tprs[name], per_image_fprs[name])
-        area = auc(FPR_GRID, mean_tpr)
+        mean_auc = np.mean(per_image_aucs[name])
+        std_auc  = np.std(per_image_aucs[name])
         color = colors[name]
 
         ax.plot(FPR_GRID, mean_tpr, color=color, linewidth=2,
-                label=f"{name}  (AUC = {area:.4f})")
+                label=f"{name}  (AUC = {mean_auc:.4f} ± {std_auc:.4f})")
         ax.fill_between(FPR_GRID,
                         np.clip(mean_tpr - std_tpr, 0, 1),
                         np.clip(mean_tpr + std_tpr, 0, 1),
