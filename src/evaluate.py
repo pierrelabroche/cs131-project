@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.ndimage import distance_transform_edt
 
 def compute_metrics(pred_binary, gt_binary, fov_mask):
     # Restrict to FOV pixels only
@@ -46,3 +47,22 @@ def auc(fpr, tpr):
     """Compute area under the ROC curve using the trapezoidal rule."""
     order = np.argsort(fpr)
     return np.trapezoid(tpr[order], fpr[order])
+
+
+def split_by_caliber(gt_binary, radius_threshold=3):
+    """
+    Split ground truth vessel mask into thin and thick subsets using the
+    distance transform. Each vessel pixel's distance to the nearest background
+    pixel approximates the local vessel radius at that point.
+
+    Inputs:
+        gt_binary:        (H, W) binary ground truth mask (0/1 or 0/255)
+        radius_threshold: pixels with distance <= this are 'thin' (default 3px)
+    Outputs:
+        thin_mask:  (H, W) uint8 — vessel pixels with radius <= radius_threshold
+        thick_mask: (H, W) uint8 — vessel pixels with radius >  radius_threshold
+    """
+    dist = distance_transform_edt(gt_binary > 0)
+    thin_mask  = ((gt_binary > 0) & (dist <= radius_threshold)).astype(np.uint8)
+    thick_mask = ((gt_binary > 0) & (dist >  radius_threshold)).astype(np.uint8)
+    return thin_mask, thick_mask
