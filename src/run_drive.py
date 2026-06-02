@@ -11,7 +11,7 @@ from scipy.ndimage import binary_fill_holes
 from canny import canny
 from color_threshold import color_threshold_segment
 from gabor import gabor_segment
-from fusion import average_fusion_segment
+from fusion import average_fusion_segment, max_fusion_segment, min_fusion_segment
 from evaluate import compute_metrics
 from preprocessing import preprocess
 
@@ -79,12 +79,23 @@ def run_fusion(img, enhanced):
     return binary
 
 
+def run_fusion_max(img, enhanced):
+    binary, _ = max_fusion_segment(img, enhanced)
+    return binary
+
+
+def run_fusion_min(img, enhanced):
+    binary, _ = min_fusion_segment(img, enhanced)
+    return binary
+
 
 METHODS = {
     "canny": run_canny,
     "color_threshold": run_color_threshold,
     "gabor": run_gabor,
-    "fusion": run_fusion,
+    "fusion_avg": run_fusion,
+    "fusion_max": run_fusion_max,
+    "fusion_min": run_fusion_min,
 }
 
 
