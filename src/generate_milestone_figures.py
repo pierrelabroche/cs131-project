@@ -103,10 +103,33 @@ def figure3(image, pred, gt, fov_mask):
     print("Saved figure3_mask_vs_gt.png")
 
 
-def figure4(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask):
-    """
-    Figure 4: 2x2 error maps for all four methods on the same image.
-    """
+LEGEND_ELEMENTS = [
+    Patch(facecolor=(0/255,   200/255, 0/255),   label="TP — correct vessel"),
+    Patch(facecolor=(220/255, 0/255,   0/255),   label="FN — missed vessel"),
+    Patch(facecolor=(0/255,   0/255,   220/255), label="FP — false alarm"),
+]
+
+
+def figure4_2panel(image, pred_canny, pred_fusion, gt, fov_mask):
+    """2-panel: Canny (worst) vs Fusion weighted (best) — compact for report."""
+    maps = [(pred_canny, "Canny"), (pred_fusion, "Fusion (weighted)")]
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    for ax, (pred, title) in zip(axes, maps):
+        ax.imshow(error_map(pred, gt, fov_mask))
+        ax.set_title(title, fontsize=13)
+        ax.axis("off")
+    fig.legend(handles=LEGEND_ELEMENTS, loc="lower center", ncol=3,
+               fontsize=11, frameon=True, bbox_to_anchor=(0.5, -0.05))
+    fig.suptitle("Error Maps — DRIVE Image 21 (Worst vs. Best Method)", fontsize=13)
+    fig.tight_layout()
+    fig.savefig(f"{OUT_DIR}/figure4_error_2panel.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("Saved figure4_error_2panel.png")
+
+
+def figure4_4panel(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask):
+    """2x2 grid: all four methods — for presentation slides."""
     maps = [
         (pred_canny,  "Canny"),
         (pred_gabor,  "Gabor"),
@@ -119,19 +142,13 @@ def figure4(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask
         ax.imshow(error_map(pred, gt, fov_mask))
         ax.set_title(title, fontsize=13)
         ax.axis("off")
-
-    legend_elements = [
-        Patch(facecolor=(0/255,   200/255, 0/255),   label="TP — correct vessel"),
-        Patch(facecolor=(220/255, 0/255,   0/255),   label="FN — missed vessel"),
-        Patch(facecolor=(0/255,   0/255,   220/255), label="FP — false alarm"),
-    ]
-    fig.legend(handles=legend_elements, loc="lower center", ncol=3,
+    fig.legend(handles=LEGEND_ELEMENTS, loc="lower center", ncol=3,
                fontsize=11, frameon=True, bbox_to_anchor=(0.5, 0.01))
     fig.suptitle("Per-Method Error Maps — DRIVE Image 21", fontsize=14, y=1.01)
     fig.tight_layout()
-    fig.savefig(f"{OUT_DIR}/figure4_method_comparison.png", dpi=150, bbox_inches="tight")
+    fig.savefig(f"{OUT_DIR}/figure4_error_4panel.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print("Saved figure4_method_comparison.png")
+    print("Saved figure4_error_4panel.png")
 
 
 if __name__ == "__main__":
@@ -144,4 +161,5 @@ if __name__ == "__main__":
 
     figure2(image, edges)
     figure3(image, pred_canny, gt, fov_mask)
-    figure4(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask)
+    figure4_2panel(image, pred_canny, pred_fusion, gt, fov_mask)
+    figure4_4panel(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask)
