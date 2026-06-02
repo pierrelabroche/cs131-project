@@ -1,21 +1,32 @@
 """
-Generate ROC curves for all three methods on the DRIVE training set.
+Generate ROC curves for all methods on DRIVE or STARE.
 
 For each method, compute a per-image ROC curve, then average TPR and FPR
-across all 20 images at shared FPR grid points.
+across all 20 images at shared FPR grid points. AUC reported as mean ± std
+of per-image AUCs.
 
-Output: results/figures/roc_curves.png
+Usage:
+    python src/plot_roc.py --dataset drive
+    python src/plot_roc.py --dataset stare
+
+Output:
+    results/figures/roc_curves_<dataset>.png
+    outputs/roc_auc_per_image_<dataset>.csv
 """
 
 import os
 import sys
+import gzip
+import io
 import glob
+import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from skimage import io
+from skimage import io as skio
 from skimage.morphology import closing, disk
 from scipy.ndimage import binary_fill_holes
+from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -26,22 +37,60 @@ from color_threshold import color_threshold_segment
 from fusion import weighted_fusion_segment
 from evaluate import roc_curve, auc
 
-IMAGE_DIR = "data/DRIVE/training/images"
-TRUTH_DIR = "data/DRIVE/training/1st_manual"
-MASK_DIR  = "data/DRIVE/training/mask"
-OUT_DIR   = "results/figures"
-
+OUT_DIR      = "results/figures"
 N_THRESHOLDS = 200
-# Shared FPR grid for averaging per-image curves
-FPR_GRID = np.linspace(0, 1, 500)
+FPR_GRID     = np.linspace(0, 1, 500)
+
+DATASET_CONFIG = {
+    "drive": {
+        "image_dir": "data/DRIVE/training/images",
+        "truth_dir": "data/DRIVE/training/1st_manual",
+        "mask_dir":  "data/DRIVE/training/mask",
+        "pattern":   "*.tif",
+        "label":     "DRIVE Training Set",
+    },
+    "stare": {
+        "image_dir": "data/STARE/stare-images",
+        "truth_dir": "data/STARE/labels-ah",
+        "mask_dir":  None,
+        "pattern":   "*.ppm.gz",
+        "label":     "STARE Dataset",
+    },
+}
+
+COLORS = {
+    "Canny":             "#e15759",
+    "Gabor":             "#4e79a7",
+    "Color Threshold":   "#59a14f",
+    "Fusion (weighted)": "#b07aa1",
+}
 
 
-def load_binary(path):
-    img = io.imread(path)
+# --- loaders ---
+
+def load_binary_drive(path):
+    img = skio.imread(path)
     img = np.squeeze(img)
     if img.ndim == 3:
         img = img[:, :, 0]
     return (img > 0).astype(np.uint8)
+
+
+def load_ppm_gz(path):
+    with gzip.open(path, "rb") as f:
+        return np.array(Image.open(io.BytesIO(f.read())))
+
+
+def load_binary_stare(path):
+    img = load_ppm_gz(path)
+    img = np.squeeze(img)
+    if img.ndim == 3:
+        img = img[:, :, 0]
+    return (img > 0).astype(np.uint8)
+
+
+def brightness_fov_mask(img_rgb, threshold=50):
+    return (img_rgb.max(axis=2) > threshold).astype(np.uint8)
 
 
 def find_matching_file(folder, image_id):
@@ -51,28 +100,25 @@ def find_matching_file(folder, image_id):
     return matches[0]
 
 
+# --- response maps ---
+
 def get_response_maps(img, enhanced):
-    """Return (response_map, label) for each method including fusion."""
     _, canny_response = canny(enhanced, sigma=1.0, low=0.05, high=0.15, return_response=True)
     _, gabor_response = gabor_segment(enhanced)
-    _, L_enhanced = color_threshold_segment(img)
-    color_response = L_enhanced.astype(np.float32) / 255.0
-
-    _, fusion_weighted_response = weighted_fusion_segment(img, enhanced)
-
+    _, L_enhanced     = color_threshold_segment(img)
+    color_response    = L_enhanced.astype(np.float32) / 255.0
+    _, fusion_response = weighted_fusion_segment(img, enhanced)
     return [
-        (canny_response,            "Canny"),
-        (gabor_response,            "Gabor"),
-        (color_response,            "Color Threshold"),
-        (fusion_weighted_response,  "Fusion (weighted)"),
+        (canny_response,  "Canny"),
+        (gabor_response,  "Gabor"),
+        (color_response,  "Color Threshold"),
+        (fusion_response, "Fusion (weighted)"),
     ]
 
 
+# --- averaging ---
+
 def average_roc(per_image_tpr, per_image_fpr):
-    """
-    Interpolate each per-image curve onto a shared FPR grid, then average.
-    Returns (mean_tpr, std_tpr) on FPR_GRID.
-    """
     tpr_interp = []
     for tpr, fpr in zip(per_image_tpr, per_image_fpr):
         order = np.argsort(fpr)
@@ -81,28 +127,49 @@ def average_roc(per_image_tpr, per_image_fpr):
     return tpr_mat.mean(axis=0), tpr_mat.std(axis=0)
 
 
+# --- main ---
+
 def main():
-    image_paths = sorted(glob.glob(os.path.join(IMAGE_DIR, "*.tif")))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", choices=["drive", "stare"], default="drive")
+    args = parser.parse_args()
+
+    cfg      = DATASET_CONFIG[args.dataset]
+    is_stare = args.dataset == "stare"
+
+    image_paths = sorted(glob.glob(os.path.join(cfg["image_dir"], cfg["pattern"])))
     if not image_paths:
-        print(f"No images found in {IMAGE_DIR}. Download DRIVE first.")
+        print(f"No images found in {cfg['image_dir']}.")
         return
 
-    # Accumulate per-image (tpr, fpr, auc) for each method
-    method_names = ["Canny", "Gabor", "Color Threshold", "Fusion (weighted)"]
-    per_image_tprs = {m: [] for m in method_names}
-    per_image_fprs = {m: [] for m in method_names}
-    per_image_aucs = {m: [] for m in method_names}
+    method_names    = ["Canny", "Gabor", "Color Threshold", "Fusion (weighted)"]
+    per_image_tprs  = {m: [] for m in method_names}
+    per_image_fprs  = {m: [] for m in method_names}
+    per_image_aucs  = {m: [] for m in method_names}
 
     for i, image_path in enumerate(image_paths):
-        filename  = os.path.basename(image_path)
-        image_id  = filename.split("_")[0]
-        gt_path   = find_matching_file(TRUTH_DIR, image_id)
-        mask_path = find_matching_file(MASK_DIR, image_id)
+        filename = os.path.basename(image_path)
 
-        img      = io.imread(image_path)
+        if is_stare:
+            image_id = filename.replace(".ppm.gz", "")
+            gt_path  = os.path.join(cfg["truth_dir"], image_id + ".ah.ppm.gz")
+            if not os.path.exists(gt_path):
+                print(f"Skipping {filename} — no label found")
+                continue
+            img      = load_ppm_gz(image_path)
+            if img.ndim == 3 and img.shape[2] == 4:
+                img = img[:, :, :3]
+            gt       = load_binary_stare(gt_path)
+            fov_mask = brightness_fov_mask(img)
+        else:
+            image_id  = filename.split("_")[0]
+            gt_path   = find_matching_file(cfg["truth_dir"], image_id)
+            mask_path = find_matching_file(cfg["mask_dir"],  image_id)
+            img       = skio.imread(image_path)
+            gt        = load_binary_drive(gt_path)
+            fov_mask  = load_binary_drive(mask_path)
+
         _, enhanced = preprocess(img)
-        gt       = load_binary(gt_path)
-        fov_mask = load_binary(mask_path)
 
         responses = get_response_maps(img, enhanced)
         for response_map, name in responses:
@@ -115,8 +182,6 @@ def main():
 
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    colors = {"Canny": "#e15759", "Gabor": "#4e79a7", "Color Threshold": "#59a14f", "Fusion (weighted)": "#b07aa1"}
-
     fig, ax = plt.subplots(figsize=(7, 6))
     ax.plot([0, 1], [0, 1], "k--", linewidth=0.8, label="Random")
 
@@ -124,7 +189,7 @@ def main():
         mean_tpr, std_tpr = average_roc(per_image_tprs[name], per_image_fprs[name])
         mean_auc = np.mean(per_image_aucs[name])
         std_auc  = np.std(per_image_aucs[name])
-        color = colors[name]
+        color    = COLORS[name]
 
         ax.plot(FPR_GRID, mean_tpr, color=color, linewidth=2,
                 label=f"{name}  (AUC = {mean_auc:.4f} ± {std_auc:.4f})")
@@ -135,24 +200,24 @@ def main():
 
     ax.set_xlabel("FPR  (1 − Specificity)")
     ax.set_ylabel("TPR  (Sensitivity)")
-    ax.set_title("ROC Curves — DRIVE Training Set\n(mean ± 1 std across 20 images)")
+    ax.set_title(f"ROC Curves — {cfg['label']}\n(mean ± 1 std across 20 images)")
     ax.legend(loc="lower right")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     fig.tight_layout()
 
-    out_path = os.path.join(OUT_DIR, "roc_curves.png")
+    out_path = os.path.join(OUT_DIR, f"roc_curves_{args.dataset}.png")
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"\nSaved {out_path}")
 
-    # Save per-image AUCs to CSV for use in summarize_results.py
+    # Save per-image AUCs
     auc_rows = []
     for name in method_names:
-        for img_path, auc_val in zip(sorted(glob.glob(os.path.join(IMAGE_DIR, "*.tif"))), per_image_aucs[name]):
+        for img_path, auc_val in zip(image_paths, per_image_aucs[name]):
             auc_rows.append({"method": name, "image": os.path.basename(img_path), "auc": auc_val})
-    auc_df = pd.DataFrame(auc_rows)
-    auc_csv = os.path.join("outputs", "roc_auc_per_image.csv")
+    auc_df  = pd.DataFrame(auc_rows)
+    auc_csv = os.path.join("outputs", f"roc_auc_per_image_{args.dataset}.csv")
     os.makedirs("outputs", exist_ok=True)
     auc_df.to_csv(auc_csv, index=False)
     print(f"Saved {auc_csv}")

@@ -49,7 +49,7 @@ def auc(fpr, tpr):
     return np.trapezoid(tpr[order], fpr[order])
 
 
-def split_by_caliber(gt_binary, radius_threshold=3):
+def split_by_caliber(gt_binary, radius_threshold=1.5):
     """
     Split ground truth vessel mask into thin and thick subsets using the
     distance transform. Each vessel pixel's distance to the nearest background

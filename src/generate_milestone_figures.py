@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 from PIL import Image
 from skimage.morphology import closing, disk
 from scipy.ndimage import binary_fill_holes
@@ -11,6 +12,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from canny import canny
 from gabor import gabor_segment
 from color_threshold import color_threshold_segment
+from fusion import weighted_fusion_segment
 from preprocessing import preprocess
 
 IMAGE_PATH = "data/DRIVE/training/images/21_training.tif"
@@ -44,6 +46,12 @@ def run_gabor(image):
 
 def run_color(image):
     pred, _ = color_threshold_segment(image)
+    return pred
+
+
+def run_fusion_weighted(image):
+    _, enhanced = preprocess(image)
+    pred, _ = weighted_fusion_segment(image, enhanced)
     return pred
 
 
@@ -95,21 +103,31 @@ def figure3(image, pred, gt, fov_mask):
     print("Saved figure3_mask_vs_gt.png")
 
 
-def figure4(image, pred_canny, pred_gabor, pred_color, gt, fov_mask):
+def figure4(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask):
     """
-    Figure 4: Side-by-side error maps for all three methods on the same image.
+    Figure 4: 2x2 error maps for all four methods on the same image.
     """
     maps = [
-        (pred_canny, "Canny"),
-        (pred_gabor, "Gabor"),
-        (pred_color, "Color Threshold"),
+        (pred_canny,  "Canny"),
+        (pred_gabor,  "Gabor"),
+        (pred_color,  "Color Threshold"),
+        (pred_fusion, "Fusion (weighted)"),
     ]
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    for ax, (pred, title) in zip(axes, maps):
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    for ax, (pred, title) in zip(axes.flat, maps):
         ax.imshow(error_map(pred, gt, fov_mask))
-        ax.set_title(f"{title}\n(green=TP  red=FN  blue=FP)")
+        ax.set_title(title, fontsize=13)
         ax.axis("off")
+
+    legend_elements = [
+        Patch(facecolor=(0/255,   200/255, 0/255),   label="TP — correct vessel"),
+        Patch(facecolor=(220/255, 0/255,   0/255),   label="FN — missed vessel"),
+        Patch(facecolor=(0/255,   0/255,   220/255), label="FP — false alarm"),
+    ]
+    fig.legend(handles=legend_elements, loc="lower center", ncol=3,
+               fontsize=11, frameon=True, bbox_to_anchor=(0.5, 0.01))
+    fig.suptitle("Per-Method Error Maps — DRIVE Image 21", fontsize=14, y=1.01)
     fig.tight_layout()
     fig.savefig(f"{OUT_DIR}/figure4_method_comparison.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -119,10 +137,11 @@ def figure4(image, pred_canny, pred_gabor, pred_color, gt, fov_mask):
 if __name__ == "__main__":
     image, gt, fov_mask = load()
 
-    edges, pred_canny = run_canny(image)
-    pred_gabor        = run_gabor(image)
-    pred_color        = run_color(image)
+    edges, pred_canny  = run_canny(image)
+    pred_gabor         = run_gabor(image)
+    pred_color         = run_color(image)
+    pred_fusion        = run_fusion_weighted(image)
 
     figure2(image, edges)
     figure3(image, pred_canny, gt, fov_mask)
-    figure4(image, pred_canny, pred_gabor, pred_color, gt, fov_mask)
+    figure4(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask)
