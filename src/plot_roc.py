@@ -11,6 +11,7 @@ import os
 import sys
 import glob
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from skimage import io
 from skimage.morphology import closing, disk
@@ -144,6 +145,17 @@ def main():
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"\nSaved {out_path}")
+
+    # Save per-image AUCs to CSV for use in summarize_results.py
+    auc_rows = []
+    for name in method_names:
+        for img_path, auc_val in zip(sorted(glob.glob(os.path.join(IMAGE_DIR, "*.tif"))), per_image_aucs[name]):
+            auc_rows.append({"method": name, "image": os.path.basename(img_path), "auc": auc_val})
+    auc_df = pd.DataFrame(auc_rows)
+    auc_csv = os.path.join("outputs", "roc_auc_per_image.csv")
+    os.makedirs("outputs", exist_ok=True)
+    auc_df.to_csv(auc_csv, index=False)
+    print(f"Saved {auc_csv}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,81 @@
+method,image,auc
+Canny,21_training.tif,0.5002439970989725
+Canny,22_training.tif,0.509339341588917
+Canny,23_training.tif,0.5225972923808281
+Canny,24_training.tif,0.514991318549973
+Canny,25_training.tif,0.5056624359186671
+Canny,26_training.tif,0.4984333390510762
+Canny,27_training.tif,0.5069987169043744
+Canny,28_training.tif,0.49951228445337303
+Canny,29_training.tif,0.4942991903045545
+Canny,30_training.tif,0.4998849915818411
+Canny,31_training.tif,0.49722927758327273
+Canny,32_training.tif,0.49824726088192584
+Canny,33_training.tif,0.49818676336915524
+Canny,34_training.tif,0.5005488077554784
+Canny,35_training.tif,0.49564757768839374
+Canny,36_training.tif,0.5028293059443386
+Canny,37_training.tif,0.4979060852719774
+Canny,38_training.tif,0.4877013794869124
+Canny,39_training.tif,0.48643053372367695
+Canny,40_training.tif,0.4878847345697961
+Gabor,21_training.tif,0.83194042355606
+Gabor,22_training.tif,0.8120091761699688
+Gabor,23_training.tif,0.798591247627807
+Gabor,24_training.tif,0.7804211258234386
+Gabor,25_training.tif,0.7808897299849785
+Gabor,26_training.tif,0.8021597397488247
+Gabor,27_training.tif,0.816818936640866
+Gabor,28_training.tif,0.8116836917117276
+Gabor,29_training.tif,0.8216405222441736
+Gabor,30_training.tif,0.8043988156074244
+Gabor,31_training.tif,0.8162253037601116
+Gabor,32_training.tif,0.8162311395636094
+Gabor,33_training.tif,0.799215308507926
+Gabor,34_training.tif,0.7384183697588503
+Gabor,35_training.tif,0.8243031603549662
+Gabor,36_training.tif,0.7834580706196064
+Gabor,37_training.tif,0.8135394773708682
+Gabor,38_training.tif,0.7859277734320089
+Gabor,39_training.tif,0.7883547344877546
+Gabor,40_training.tif,0.8195999117708221
+Color Threshold,21_training.tif,0.7827199983647654
+Color Threshold,22_training.tif,0.6729234568109752
+Color Threshold,23_training.tif,0.7896728216991614
+Color Threshold,24_training.tif,0.7511381780420648
+Color Threshold,25_training.tif,0.6835315342239723
+Color Threshold,26_training.tif,0.7547239292142588
+Color Threshold,27_training.tif,0.6709106422871596
+Color Threshold,28_training.tif,0.7418091023027683
+Color Threshold,29_training.tif,0.6597299858965381
+Color Threshold,30_training.tif,0.7059408168690261
+Color Threshold,31_training.tif,0.6940144883239404
+Color Threshold,32_training.tif,0.7218966746522096
+Color Threshold,33_training.tif,0.7880101617063402
+Color Threshold,34_training.tif,0.6171844562719203
+Color Threshold,35_training.tif,0.704897360721599
+Color Threshold,36_training.tif,0.7427344565591741
+Color Threshold,37_training.tif,0.721306293368058
+Color Threshold,38_training.tif,0.7796638340087446
+Color Threshold,39_training.tif,0.7924459331334611
+Color Threshold,40_training.tif,0.7779677098042322
+Fusion (weighted),21_training.tif,0.902189458893784
+Fusion (weighted),22_training.tif,0.8348884966613888
+Fusion (weighted),23_training.tif,0.8796089773241902
+Fusion (weighted),24_training.tif,0.8489451117860217
+Fusion (weighted),25_training.tif,0.8301971955416905
+Fusion (weighted),26_training.tif,0.8752876361764836
+Fusion (weighted),27_training.tif,0.8486898287303014
+Fusion (weighted),28_training.tif,0.8762560186709347
+Fusion (weighted),29_training.tif,0.8562863285940425
+Fusion (weighted),30_training.tif,0.8585183483992136
+Fusion (weighted),31_training.tif,0.870170317313371
+Fusion (weighted),32_training.tif,0.858342385070467
+Fusion (weighted),33_training.tif,0.8809034588705387
+Fusion (weighted),34_training.tif,0.7550569311035292
+Fusion (weighted),35_training.tif,0.8683151105404601
+Fusion (weighted),36_training.tif,0.8534894430260171
+Fusion (weighted),37_training.tif,0.867927229319446
+Fusion (weighted),38_training.tif,0.8676032469991188
+Fusion (weighted),39_training.tif,0.8712402881478964
+Fusion (weighted),40_training.tif,0.8857340935962055
