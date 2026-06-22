@@ -2,7 +2,7 @@
 
 **Hnin Yupar Mon & Pierre Labroche**
 
-Classical (non-deep-learning) computer vision methods for segmenting blood vessels in retinal fundus images, evaluated on the DRIVE and STARE datasets.
+Classical computer vision methods for segmenting blood vessels in retinal fundus images, evaluated on the DRIVE and STARE datasets.
 
 ## Setup
 
@@ -78,10 +78,10 @@ All scripts must be run from the project root.
 python src/run_drive.py --method canny
 python src/run_drive.py --method gabor
 python src/run_drive.py --method color_threshold
-python src/run_drive.py --method fusion_avg
+python src/run_drive.py --method fusion_avg        # not used in final project
 python src/run_drive.py --method fusion_weighted   # AUC-weighted fusion (best)
-python src/run_drive.py --method fusion_max
-python src/run_drive.py --method fusion_min
+python src/run_drive.py --method fusion_max        # not used in final project
+python src/run_drive.py --method fusion_min        # not used in final project
 
 # STARE
 python src/run_stare.py --method canny
@@ -95,8 +95,8 @@ Outputs go to `outputs/<method>/training/` (DRIVE) or `outputs/stare/<method>/` 
 
 ```bash
 # ROC curves (mean ± 1 std band, AUC in legend)
-python src/plot_roc.py --dataset drive   # → results/figures/roc_curves_drive.png
-python src/plot_roc.py --dataset stare   # → results/figures/roc_curves_stare.png
+python src/plot_roc.py --dataset drive   # fig in results/figures/roc_curves_drive.png
+python src/plot_roc.py --dataset stare   # fig in results/figures/roc_curves_stare.png
 
 # Summary metrics table (Sensitivity, Specificity, Accuracy, F1, AUC)
 python src/summarize_results.py --dataset drive
@@ -106,11 +106,11 @@ python src/summarize_results.py --dataset stare
 python src/tune_threshold.py --method fusion_weighted
 
 # Thin vs. thick vessel sensitivity analysis
-python src/caliber_analysis.py --dataset drive   # → results/figures/caliber_analysis_drive.png
-python src/caliber_analysis.py --dataset stare   # → results/figures/caliber_analysis_stare.png
+python src/caliber_analysis.py --dataset drive   # fig in results/figures/caliber_analysis_drive.png
+python src/caliber_analysis.py --dataset stare   # fig in results/figures/caliber_analysis_stare.png
 
 # Vessel radius distribution across DRIVE GT masks
-python src/caliber_distribution.py              # → results/figures/caliber_distribution.png
+python src/caliber_distribution.py              # fig in results/figures/caliber_distribution.png
 
 # All report figures (figure2, figure3, figure4 variants)
 python src/generate_milestone_figures.py
@@ -122,7 +122,7 @@ python src/generate_milestone_figures.py
 Extracts the **green channel** (highest vessel contrast in retinal images) and applies **CLAHE** (clipLimit=2.0, tileGridSize=8×8) for local contrast enhancement. Returns `(green, enhanced)`.
 
 ### Canny (`src/canny.py`)
-Implemented from scratch (no `cv2.Canny`):
+Implemented from scratch:
 1. Gaussian blur (kernel size = 6σ+1, default σ=1.0)
 2. Sobel gradient (magnitude + direction)
 3. Non-maximum suppression
@@ -131,14 +131,14 @@ Implemented from scratch (no `cv2.Canny`):
 Post-processed with morphological closing (`disk(2)`) + `binary_fill_holes` to convert thin edges into filled vessel regions.
 
 ### Gabor (`src/gabor.py`)
-Simplified version of Soares et al. 2006:
+Simplified version of [Soares et al. 2006](https://ieeexplore.ieee.org/document/1677727):
 - 4 scales: λ ∈ {2, 3, 4, 6} px; σ = 0.56λ; γ = 0.5
 - 18 orientations: 0°–170° in 10° steps
 - Max response across all (scale, orientation) pairs, normalized to [0, 1]
 - Fixed threshold (default=0.1)
 
 ### Color Threshold (`src/color_threshold.py`)
-Converts RGB → Lab, inverts the L channel (vessels are dark → become bright peaks), applies CLAHE, and thresholds the normalized L at 0.5.
+Converts RGB -> Lab, inverts the L channel (vessels are dark -> become bright peaks), applies CLAHE, and thresholds the normalized L at 0.5.
 
 ### Fusion (`src/fusion.py`)
 Combines the normalized [0, 1] response maps of all three base methods:
@@ -148,9 +148,9 @@ Combines the normalized [0, 1] response maps of all three base methods:
 - `min_fusion_segment` — element-wise min
 
 ### Evaluation (`src/evaluate.py`)
-- `compute_metrics(pred, gt, fov_mask)` → sensitivity, specificity, accuracy, F1, TP/TN/FP/FN (within FOV only)
-- `roc_curve(response_map, gt, fov_mask)` → sweeps 100 thresholds [0, 1]
-- `auc(fpr, tpr)` → trapezoidal rule
+- `compute_metrics(pred, gt, fov_mask)` -> sensitivity, specificity, accuracy, F1, TP/TN/FP/FN (within FOV only)
+- `roc_curve(response_map, gt, fov_mask)` -> sweeps 100 thresholds [0, 1]
+- `auc(fpr, tpr)` -> trapezoidal rule
 
 ## Figures
 
