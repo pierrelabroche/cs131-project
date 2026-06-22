@@ -151,6 +151,31 @@ def figure4_4panel(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, f
     print("Saved figure4_error_4panel.png")
 
 
+def figure4_1row(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask):
+    """Single row: all four methods with minimal spacing."""
+    maps = [
+        (pred_canny,  "Canny"),
+        (pred_gabor,  "Gabor"),
+        (pred_color,  "Color Threshold"),
+        (pred_fusion, "Fusion (weighted)"),
+    ]
+
+    fig, axes = plt.subplots(1, 4, figsize=(22, 6))
+    fig.subplots_adjust(wspace=0.08)
+    for ax, (pred, title) in zip(axes, maps):
+        ax.imshow(error_map(pred, gt, fov_mask))
+        ax.set_title(title, fontsize=17)
+        ax.axis("off")
+    fig.legend(handles=LEGEND_ELEMENTS, loc="lower center", ncol=3,
+               fontsize=17, frameon=True, bbox_to_anchor=(0.5, -0.02),
+               handlelength=2.5, handleheight=1.8, borderpad=1.0,
+               labelspacing=1.0, handletextpad=0.8)
+    fig.suptitle("Per-Method Error Maps — DRIVE Image 21", fontsize=18)
+    fig.savefig(f"{OUT_DIR}/figure4_error_1row.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("Saved figure4_error_1row.png")
+
+
 if __name__ == "__main__":
     image, gt, fov_mask = load()
 
@@ -162,4 +187,5 @@ if __name__ == "__main__":
     figure2(image, edges)
     figure3(image, pred_canny, gt, fov_mask)
     figure4_2panel(image, pred_canny, pred_fusion, gt, fov_mask)
-    figure4_4panel(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask)
+    # figure4_4panel(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask)
+    figure4_1row(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, fov_mask)
