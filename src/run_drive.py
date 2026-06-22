@@ -58,7 +58,7 @@ def run_canny(img, enhanced):
 
 def run_color_threshold(img, enhanced):
     """
-    Run color thresholding segmentation (inverted L channel + Otsu).
+    Run color thresholding segmentation (inverted L channel, fixed threshold=0.5).
     Operates on the original RGB image, not the preprocessed green channel.
     """
     binary, _ = color_threshold_segment(img)
