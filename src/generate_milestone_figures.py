@@ -143,7 +143,7 @@ def figure4_4panel(image, pred_canny, pred_gabor, pred_color, pred_fusion, gt, f
         ax.set_title(title, fontsize=13)
         ax.axis("off")
     fig.legend(handles=LEGEND_ELEMENTS, loc="lower center", ncol=3,
-               fontsize=11, frameon=True, bbox_to_anchor=(0.5, 0.01))
+               fontsize=14, frameon=True, bbox_to_anchor=(0.5, 0.01))
     fig.suptitle("Per-Method Error Maps — DRIVE Image 21", fontsize=14, y=1.01)
     fig.tight_layout()
     fig.savefig(f"{OUT_DIR}/figure4_error_4panel.png", dpi=150, bbox_inches="tight")

@@ -181,20 +181,31 @@ def main():
     x = np.arange(len(method_names))
     width = 0.35
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(7, 6))
     bars_thin  = ax.bar(x - width/2, [mean_thin[m]  for m in method_names], width,
                         label=f"Thin  (radius ≤ {RADIUS_THRESHOLD}px)", color="#e15759")
     bars_thick = ax.bar(x + width/2, [mean_thick[m] for m in method_names], width,
                         label=f"Thick (radius > {RADIUS_THRESHOLD}px)",  color="#4e79a7")
 
-    ax.set_ylabel("Sensitivity (mean over 20 images)")
-    ax.set_title(f"Thin vs. Thick Vessel Sensitivity by Method — {dataset_label}")
+    # labels inside bars in white
+    for bar in bars_thin:
+        h = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, h/2,
+                f"{h:.3f}", ha="center", va="center",
+                fontsize=11, fontweight="bold", color="white")
+    for bar in bars_thick:
+        h = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, h/2,
+                f"{h:.3f}", ha="center", va="center",
+                fontsize=11, fontweight="bold", color="white")
+
+    ax.set_ylabel("Sensitivity (mean over 20 images)", fontsize=13)
+    ax.set_title(f"Thin vs. Thick Vessel Sensitivity — {dataset_label}", fontsize=14)
     ax.set_xticks(x)
-    ax.set_xticklabels(method_names, rotation=15, ha="right")
+    ax.set_xticklabels(method_names, fontsize=12)
+    ax.tick_params(axis='y', labelsize=11)
     ax.set_ylim(0, 1)
-    ax.legend()
-    ax.bar_label(bars_thin,  fmt="%.3f", padding=3, fontsize=8)
-    ax.bar_label(bars_thick, fmt="%.3f", padding=3, fontsize=8)
+    ax.legend(fontsize=12)
     fig.tight_layout()
 
     out_path = os.path.join(OUT_DIR, f"caliber_analysis_{args.dataset}.png")
